@@ -10,9 +10,9 @@ from pandas_datareader import wb
 app = Dash(__name__, external_stylesheets=[dbc.themes.LUX])
 
 indicators = {
-    "IT.NET.USER.ZS": "Individuals using the Internet (% of population)",
-    "SG.GEN.PARL.ZS": "Proportion of seats held by women in national parliaments (%)",
-    "SP.URB.TOTL.IN.ZS": "Urban population (% of total population)",
+    "SP.DYN.CBRT.IN": "Birth rate, crude (per 1,000 people)",
+    "EG.USE.COMM.FO.ZS": "Fossil fuel energy consumption (% of total)",
+    "EG.FEC.RNEW.ZS": "Renewable energy consumption (% of total final energy consumption)",
 }
 
 # get country name and ISO id for mapping on choropleth
@@ -215,8 +215,8 @@ def update_graph(n_clicks, stored_dataframe, years_chosen, indct_chosen):
             scope="world",
             hover_data={"iso3c": False, "country": True},
             labels={
-                indicators["SG.GEN.PARL.ZS"]: "% parliament women",
-                indicators["IT.NET.USER.ZS"]: "pop % using internet",
+                indicators["EG.FEC.RNEW.ZS"]: "% Renewable energy",
+                indicators["EG.USE.COMM.FO.ZS"]: "% of Fossil Fuel Consumption",
             },
         )
         fig.update_layout(

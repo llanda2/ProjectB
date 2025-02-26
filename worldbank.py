@@ -6,7 +6,7 @@ import dash_bootstrap_components as dbc
 import pandas as pd
 from pandas_datareader import wb
 
-app = Dash(__name__, external_stylesheets=[dbc.themes.LUX])
+app = Dash(__name__, external_stylesheets=[dbc.themes.MORPH])
 
 indicators = {
     "SP.DYN.CBRT.IN": "Birth rate, crude (per 1,000 people)",
@@ -15,7 +15,6 @@ indicators = {
     "SH.DYN.MORT": "Mortality rate, under-5 (per 1,000 live births)"
 }
 
-# get country name and ISO id for mapping on choropleth
 countries = wb.get_countries()
 countries["capitalCity"].replace({"": None}, inplace=True)
 countries.dropna(subset=["capitalCity"], inplace=True)
@@ -107,6 +106,19 @@ app.layout = dbc.Container(
                 ),
             ]
         ),
+        dbc.Row(
+            [
+                dbc.Col(dcc.Graph(id="line-chart"), width=12),
+                dbc.Col(
+                    dcc.Dropdown(
+                        id="compare-countries",
+                        multi=True,
+                        placeholder="Select additional countries to compare",
+                    ),
+                    width=12,
+                ),
+            ]
+        ),
         dcc.Store(id="storage", storage_type="session", data={}),
         dcc.Interval(id="timer", interval=1000 * 60, n_intervals=0),
     ]
@@ -121,12 +133,13 @@ def store_data(n_time):
 
 @app.callback(
     Output("my-choropleth", "figure"),
-    Input("storage", "data"),
-    State("years-range", "value"),
-    State("dropdown-indicator", "value"),
+    Input("years-range", "value"),
+    Input("dropdown-indicator", "value"),
+    State("storage", "data"),
 )
-def update_graph(stored_dataframe, years_chosen, indct_chosen):
+def update_graph(years_chosen, indct_chosen, stored_dataframe):
     dff = pd.DataFrame.from_records(stored_dataframe)
+
     if years_chosen[0] != years_chosen[1]:
         dff = dff[dff.year.between(years_chosen[0], years_chosen[1])]
         dff = dff.groupby(["iso3c", "country"])[indct_chosen].mean().reset_index()
@@ -144,6 +157,36 @@ def update_graph(stored_dataframe, years_chosen, indct_chosen):
     fig.update_layout(
         geo={"projection": {"type": "natural earth"}},
         margin=dict(l=50, r=50, t=50, b=50),
+    )
+    return fig
+
+
+@app.callback(
+    Output("line-chart", "figure"),
+    Input("my-choropleth", "clickData"),
+    Input("compare-countries", "value"),
+    State("storage", "data"),
+)
+def update_line_chart(clickData, compare_countries, stored_dataframe):
+    dff = pd.DataFrame.from_records(stored_dataframe)
+    selected_countries = []
+
+    if clickData:
+        selected_countries.append(clickData["points"][0]["location"])
+    if compare_countries:
+        selected_countries.extend(compare_countries)
+
+    dff = dff[dff["iso3c"].isin(selected_countries)]
+
+    fig = px.line(
+        dff,
+        x="year",
+        y=["Birth rate, crude (per 1,000 people)", "Mortality rate, under-5 (per 1,000 live births)",
+           "Fossil fuel energy consumption (% of total)",
+           "Renewable energy consumption (% of total final energy consumption)"],
+        color="country",
+        title="Country Trends",
+        labels={"value": "Rate", "variable": "Indicator"},
     )
     return fig
 

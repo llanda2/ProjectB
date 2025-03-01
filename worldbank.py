@@ -549,6 +549,7 @@ def update_country_detail(selected_country, stored_dataframe):
 
 
 # Callback for the scatter correlation plot
+# Callback for the scatter correlation plot
 @app.callback(
     Output("scatter-correlation", "figure"),
     [Input("x-axis-indicator", "value"),
@@ -565,14 +566,13 @@ def update_correlation_scatter(x_indicator, y_indicator, size_indicator, stored_
     if years_chosen[0] != years_chosen[1]:
         dff = dff[dff.year.between(years_chosen[0], years_chosen[1])]
 
-        # FIX: Select only numeric columns for mean calculation
+        # Select only numeric columns for mean calculation
         numeric_cols = dff.select_dtypes(include=['number']).columns
 
         # Ensure we include our indicators of interest if they're not in numeric_cols
         required_cols = []
         for col in [x_indicator, y_indicator]:
             if col in dff.columns and col not in numeric_cols:
-                # For these specific columns, try to force numeric conversion
                 try:
                     dff[col] = pd.to_numeric(dff[col], errors='coerce')
                     required_cols.append(col)
@@ -604,25 +604,50 @@ def update_correlation_scatter(x_indicator, y_indicator, size_indicator, stored_
         y_indicator: ':.2f',
     }
 
+    # Drop rows with NaN values in x or y indicators to avoid plotting issues
+    dff = dff.dropna(subset=[x_indicator, y_indicator])
+
     # Set up the scatter plot
     if size_indicator != "none":
+        # Add the size indicator to hover data
         hover_data[size_indicator] = ':.2f'
-        fig = px.scatter(
-            dff,
-            x=x_indicator,
-            y=y_indicator,
-            size=size_indicator,
-            color="region",
-            hover_name="country",
-            hover_data=hover_data,
-            size_max=30,
-            title=f"Relationship between {x_indicator} and {y_indicator} ({year_text})",
-            labels={
-                x_indicator: x_indicator,
-                y_indicator: y_indicator,
-                size_indicator: size_indicator
-            }
-        )
+
+        # Drop rows with NaN in the size indicator
+        valid_size_data = dff.dropna(subset=[size_indicator])
+
+        # Only proceed with size parameter if we have valid data
+        if not valid_size_data.empty:
+            fig = px.scatter(
+                valid_size_data,
+                x=x_indicator,
+                y=y_indicator,
+                size=size_indicator,
+                color="region",
+                hover_name="country",
+                hover_data=hover_data,
+                size_max=30,
+                title=f"Relationship between {x_indicator} and {y_indicator} ({year_text})",
+                labels={
+                    x_indicator: x_indicator,
+                    y_indicator: y_indicator,
+                    size_indicator: size_indicator
+                }
+            )
+        else:
+            # Fallback to regular scatter plot without size if no valid size data
+            fig = px.scatter(
+                dff,
+                x=x_indicator,
+                y=y_indicator,
+                color="region",
+                hover_name="country",
+                hover_data=hover_data,
+                title=f"Relationship between {x_indicator} and {y_indicator} ({year_text})",
+                labels={
+                    x_indicator: x_indicator,
+                    y_indicator: y_indicator
+                }
+            )
     else:
         fig = px.scatter(
             dff,

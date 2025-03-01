@@ -29,11 +29,6 @@ countries = countries.rename(columns={"name": "country"})
 countries = countries[countries["country"] != "Korea, Dem. People's Rep."]
 
 
-# Filter for specific regions if you want a regional map instead of world map
-# Uncomment and modify this to focus on specific regions
-# regions_of_interest = ['East Asia & Pacific', 'Europe & Central Asia']
-# countries = countries[countries['region'].isin(regions_of_interest)]
-
 def update_wb_data():
     # Retrieve specific world bank data from API
     df = wb.download(
@@ -122,194 +117,228 @@ def store_clicked_country(click_data):
     return country_code
 
 
-# Layout
+# Layout - RESTRUCTURED as requested
 app.layout = dbc.Container(
     [
+        # Header section
         dbc.Row(
             dbc.Col(
                 [
                     html.H1(
                         "Socioeconomic Development & Energy Usage Patterns",
-                        style={"textAlign": "center"},
+                        style={"textAlign": "center", "marginBottom": "15px", "marginTop": "30px"},
                     ),
-                    html.H4(
+                    html.H5(
                         id="last-updated",
                         children="Data last fetched: Not yet updated",
-                        style={"textAlign": "center", "color": "gray", "marginTop": "10px"},
+                        style={"textAlign": "center", "color": "gray", "marginBottom": "25px"},
                     ),
                     dbc.Alert(
                         "Click on any country in the map to see detailed statistics!",
                         color="info",
-                        style={"textAlign": "center", "marginBottom": "20px"}
+                        style={"textAlign": "center", "marginBottom": "30px", "maxWidth": "800px", "margin": "0 auto"}
                     ),
                 ],
                 width=12,
-            )
+            ),
+            className="mb-4",  # Add bottom margin to the header row
         ),
+
+        # Controls section
+        dbc.Card(
+            dbc.CardBody([
+                dbc.Row(
+                    [
+                        dbc.Col(
+                            [
+                                dbc.Label(
+                                    "Select Indicator:",
+                                    className="fw-bold",
+                                    style={"fontSize": 18, "marginBottom": "10px"},
+                                ),
+                                dcc.Dropdown(
+                                    id="dropdown-indicator",
+                                    options=[{"label": i, "value": i} for i in indicators.values()],
+                                    value=list(indicators.values())[0],
+                                    clearable=False,
+                                    style={"width": "100%"},
+                                ),
+                            ],
+                            width=12,
+                            lg=4,
+                            style={"paddingRight": "20px"},
+                        ),
+                        dbc.Col(
+                            [
+                                dbc.Label(
+                                    "Select Year Range:",
+                                    className="fw-bold",
+                                    style={"fontSize": 18, "marginBottom": "10px"},
+                                ),
+                                dcc.RangeSlider(
+                                    id="years-range",
+                                    min=2000,
+                                    max=2020,
+                                    step=1,
+                                    value=[2010, 2015],
+                                    marks={i: str(i) if i % 5 == 0 else "" for i in range(2000, 2021)},
+                                ),
+                            ],
+                            width=12,
+                            lg=4,
+                            style={"paddingRight": "20px"},
+                        ),
+                        dbc.Col(
+                            [
+                                dbc.Label(
+                                    "Visualization Type:",
+                                    className="fw-bold",
+                                    style={"fontSize": 18, "marginBottom": "10px"},
+                                ),
+                                dbc.RadioItems(
+                                    id="viz-type",
+                                    options=[
+                                        {"label": "Standard Map", "value": "standard"},
+                                        {"label": "Sustainability Score", "value": "sustainability"},
+                                    ],
+                                    value="standard",
+                                    inline=True,
+                                    inputClassName="me-2",
+                                    labelClassName="me-3",
+                                ),
+                            ],
+                            width=12,
+                            lg=4,
+                        ),
+                    ],
+                    className="mb-4",  # Add margin to the control rows
+                ),
+                dbc.Row(
+                    [
+                        dbc.Col(
+                            html.Div([
+                                html.Div(
+                                    id="animation-progress",
+                                    children="Animation Year: Not Started",
+                                    style={"marginRight": "15px", "fontWeight": "bold"}
+                                ),
+                                dbc.Button(
+                                    "Play Time Animation",
+                                    id="play-button",
+                                    color="success",
+                                    className="me-3",
+                                ),
+                                dbc.Button(
+                                    "Update Map",
+                                    id="update-button",
+                                    n_clicks=0,
+                                    color="primary",
+                                    className="fw-bold",
+                                ),
+                            ]),
+                            width=12,
+                            className="d-flex justify-content-center align-items-center",
+                            style={"marginTop": "10px", "marginBottom": "10px"},
+                        ),
+                    ],
+                ),
+            ]),
+            className="mb-4",  # Add bottom margin to the card
+            style={"boxShadow": "0 4px 6px rgba(0, 0, 0, 0.1)", "border": "none"},
+        ),
+
+        # 1. WORLD MAP SECTION (Moved to top as requested)
         dbc.Row(
             [
                 dbc.Col(
                     [
-                        dcc.Graph(id="my-choropleth", figure={}, style={"height": "60vh"}),
+                        html.H3("Global Data Visualization",
+                                style={"textAlign": "center", "marginBottom": "15px", "marginTop": "10px"}),
+                        dcc.Graph(id="my-choropleth", figure={}, style={"height": "65vh"}),
                     ],
                     width=12,
-                    lg=8,
                 ),
+            ],
+            className="mb-5",  # Add bottom margin to this row
+        ),
+
+        # 2. REGIONAL STATS SECTION (Moved to middle as requested)
+        dbc.Row(
+            [
                 dbc.Col(
                     [
                         html.Div(id="country-detail-title", children=[
-                            html.H3("Country Details", style={"textAlign": "center"}),
-                            html.P("Click on a country to see details",
-                                   style={"textAlign": "center", "fontStyle": "italic"})
+                            html.H3("Regional Statistics", style={"textAlign": "center", "marginBottom": "15px"}),
+                            html.P("Click on a country in the map to see regional details",
+                                   style={"textAlign": "center", "fontStyle": "italic", "marginBottom": "20px"})
                         ]),
-                        dcc.Graph(id="country-detail", figure={}, style={"height": "50vh"}),
+                        dcc.Graph(id="country-detail", figure={}, style={"height": "60vh"}),
                     ],
                     width=12,
-                    lg=4,
-                ),
-            ]
-        ),
-        dbc.Row(
-            [
-                dbc.Col(
-                    [
-                        dbc.Label(
-                            "Select Indicator:",
-                            className="fw-bold",
-                            style={"textDecoration": "underline", "fontSize": 20},
-                        ),
-                        dcc.Dropdown(
-                            id="dropdown-indicator",
-                            options=[{"label": i, "value": i} for i in indicators.values()],
-                            value=list(indicators.values())[0],
-                            clearable=False,
-                            style={"width": "100%"},
-                        ),
-                    ],
-                    width=12,
-                    lg=4,
-                ),
-                dbc.Col(
-                    [
-                        dbc.Label(
-                            "Select Year Range:",
-                            className="fw-bold",
-                            style={"textDecoration": "underline", "fontSize": 20},
-                        ),
-                        dcc.RangeSlider(
-                            id="years-range",
-                            min=2000,
-                            max=2020,
-                            step=1,
-                            value=[2010, 2015],
-                            marks={i: str(i) if i % 5 == 0 else "" for i in range(2000, 2021)},
-                        ),
-                    ],
-                    width=12,
-                    lg=4,
-                ),
-                dbc.Col(
-                    [
-                        dbc.Label(
-                            "Visualization Type:",
-                            className="fw-bold",
-                            style={"textDecoration": "underline", "fontSize": 20},
-                        ),
-                        dbc.RadioItems(
-                            id="viz-type",
-                            options=[
-                                {"label": "Standard Map", "value": "standard"},
-                                {"label": "Sustainability Score", "value": "sustainability"},
-                            ],
-                            value="standard",
-                            inline=True,
-                        ),
-                    ],
-                    width=12,
-                    lg=4,
-                ),
-            ]
-        ),
-        dbc.Row(
-            [
-                dbc.Col(
-                    html.Div([
-                        html.Div(id="animation-progress", children="Animation Year: Not Started"),
-                        dbc.Button(
-                            "Play Time Animation",
-                            id="play-button",
-                            color="success",
-                            className="me-2"
-                        ),
-                        dbc.Button(
-                            "Update Map",
-                            id="update-button",
-                            n_clicks=0,
-                            color="primary",
-                            className="fw-bold",
-                        ),
-                    ]),
-                    width=12,
-                    className="d-flex justify-content-center align-items-center",
-                    style={"marginTop": "15px", "gap": "15px"}
                 ),
             ],
+            className="mb-5",  # Add bottom margin to this row
         ),
+
+        # 3. CROSS INDICATOR SECTION (Moved to bottom as requested)
         dbc.Row(
             [
                 dbc.Col(
                     [
-                        html.H3("Cross-Indicator Analysis", style={"textAlign": "center", "marginTop": "30px"}),
+                        html.H3("Cross-Indicator Analysis",
+                                style={"textAlign": "center", "marginBottom": "15px"}),
                         html.P(
-                            "This scatter plot shows the relationship between indicators across countries.",
-                            style={"textAlign": "center"}
+                            "This analysis shows the relationship between indicators across countries.",
+                            style={"textAlign": "center", "marginBottom": "15px"}
                         ),
+
+                        # Scatter plot controls
+                        dbc.Card(
+                            dbc.CardBody([
+                                dbc.Row(
+                                    [
+                                        dbc.Col([
+                                            dbc.Label("X-Axis Indicator:", style={"marginBottom": "8px"}),
+                                            dcc.Dropdown(
+                                                id="x-axis-indicator",
+                                                options=[{"label": i, "value": i} for i in indicators.values()],
+                                                value=list(indicators.values())[0],
+                                                clearable=False,
+                                            ),
+                                        ], width=12, lg=4, style={"paddingRight": "15px"}),
+                                        dbc.Col([
+                                            dbc.Label("Y-Axis Indicator:", style={"marginBottom": "8px"}),
+                                            dcc.Dropdown(
+                                                id="y-axis-indicator",
+                                                options=[{"label": i, "value": i} for i in indicators.values()],
+                                                value=list(indicators.values())[2],
+                                                clearable=False,
+                                            ),
+                                        ], width=12, lg=4, style={"paddingRight": "15px"}),
+                                        dbc.Col([
+                                            dbc.Label("Size Indicator (Optional):", style={"marginBottom": "8px"}),
+                                            dcc.Dropdown(
+                                                id="size-indicator",
+                                                options=[{"label": "None", "value": "none"}] +
+                                                        [{"label": i, "value": i} for i in indicators.values()],
+                                                value="none",
+                                            ),
+                                        ], width=12, lg=4),
+                                    ],
+                                ),
+                            ]),
+                            className="mb-3",
+                            style={"boxShadow": "0 4px 6px rgba(0, 0, 0, 0.1)", "border": "none"},
+                        ),
+
                         dcc.Graph(id="scatter-correlation", figure={}, style={"height": "60vh"}),
                     ],
                     width=12,
                 ),
             ],
-            style={"marginTop": "20px"},
+            className="mb-5",  # Add bottom margin to this row
         ),
-        dbc.Row(
-            [
-                dbc.Col(
-                    [
-                        html.H4("Advanced Scatter Plot Options", style={"textAlign": "center", "marginTop": "10px"}),
-                        dbc.Row([
-                            dbc.Col([
-                                dbc.Label("X-Axis Indicator:"),
-                                dcc.Dropdown(
-                                    id="x-axis-indicator",
-                                    options=[{"label": i, "value": i} for i in indicators.values()],
-                                    value=list(indicators.values())[0],
-                                    clearable=False,
-                                ),
-                            ], width=4),
-                            dbc.Col([
-                                dbc.Label("Y-Axis Indicator:"),
-                                dcc.Dropdown(
-                                    id="y-axis-indicator",
-                                    options=[{"label": i, "value": i} for i in indicators.values()],
-                                    value=list(indicators.values())[2],
-                                    clearable=False,
-                                ),
-                            ], width=4),
-                            dbc.Col([
-                                dbc.Label("Size Indicator (Optional):"),
-                                dcc.Dropdown(
-                                    id="size-indicator",
-                                    options=[{"label": "None", "value": "none"}] +
-                                            [{"label": i, "value": i} for i in indicators.values()],
-                                    value="none",
-                                ),
-                            ], width=4),
-                        ]),
-                    ],
-                    width=12,
-                ),
-            ],
-        ),
+
         # Hidden components for state management
         dcc.Store(id="storage", storage_type="session", data={}),
         dcc.Store(id="selected-country", storage_type="memory", data=None),
@@ -318,7 +347,8 @@ app.layout = dbc.Container(
         dcc.Interval(id="animation-interval", interval=1000, n_intervals=0, disabled=True),
     ],
     fluid=True,
-    style={"paddingTop": "20px", "paddingBottom": "40px"}
+    style={"paddingTop": "20px", "paddingBottom": "60px", "maxWidth": "1440px"}
+    # Limit max width for better readability
 )
 
 
@@ -419,15 +449,18 @@ def update_graph(n_clicks, play_clicks, animation_year, stored_dataframe, viz_ty
     # Customize the layout
     fig.update_layout(
         geo={"projection": {"type": "natural earth"}},
-        margin=dict(l=0, r=0, t=50, b=0),
+        margin=dict(l=10, r=10, t=60, b=10),
         coloraxis_colorbar=dict(
             title=color_column,
+            thickness=20,
+            len=0.7,
         ),
         title={
             "font": {"size": 24},
             "x": 0.5,
             "xanchor": "center"
         },
+        height=600,  # Set consistent height
     )
 
     # Add a text annotation for the animation year if active
@@ -466,11 +499,13 @@ def update_country_detail(selected_country, stored_dataframe):
                 yref="paper",
                 x=0.5,
                 y=0.5
-            )]
+            )],
+            height=600  # Set consistent height
         )
         title_component = [
-            html.H3("Country Details", style={"textAlign": "center"}),
-            html.P("Click on a country to see details", style={"textAlign": "center", "fontStyle": "italic"})
+            html.H3("Regional Statistics", style={"textAlign": "center", "marginBottom": "15px"}),
+            html.P("Click on a country to see regional details",
+                   style={"textAlign": "center", "fontStyle": "italic", "marginBottom": "20px"})
         ]
         return fig, title_component
 
@@ -486,7 +521,7 @@ def update_country_detail(selected_country, stored_dataframe):
         rows=2,
         cols=1,
         subplot_titles=("Time Series Analysis", "Indicator Comparison"),
-        vertical_spacing=0.15
+        vertical_spacing=0.22  # Increase vertical spacing between subplots
     )
 
     # 1. Time series for selected indicators
@@ -529,26 +564,33 @@ def update_country_detail(selected_country, stored_dataframe):
     # Update layout
     fig.update_layout(
         height=600,
-        legend=dict(orientation="h", y=-0.2),
-        margin=dict(l=10, r=10, t=60, b=10),
+        legend=dict(
+            orientation="h",
+            y=-0.2,
+            xanchor="center",
+            x=0.5,
+            font=dict(size=10)  # Smaller font for legend
+        ),
+        margin=dict(l=20, r=20, t=80, b=80),  # Increase margins
         hovermode="closest"
     )
 
     # Update axes
     fig.update_xaxes(title_text="Year", row=1, col=1)
     fig.update_xaxes(tickangle=45, row=2, col=1)
+    # Limit the number of ticks to avoid crowding
+    fig.update_xaxes(nticks=10, row=1, col=1)
 
     # Create title component
     title_component = [
-        html.H3(f"{country_name} Details", style={"textAlign": "center"}),
+        html.H3(f"{country_name} Regional Statistics", style={"textAlign": "center", "marginBottom": "15px"}),
         html.P(f"Region: {country_data['region'].iloc[0] if not country_data.empty else 'Unknown'}",
-               style={"textAlign": "center"})
+               style={"textAlign": "center", "marginBottom": "15px"})
     ]
 
     return fig, title_component
 
 
-# Callback for the scatter correlation plot
 # Callback for the scatter correlation plot
 @app.callback(
     Output("scatter-correlation", "figure"),
@@ -683,14 +725,21 @@ def update_correlation_scatter(x_indicator, y_indicator, size_indicator, stored_
     # Update layout
     fig.update_layout(
         height=600,
-        legend=dict(orientation="h", y=-0.15),
-        margin=dict(l=10, r=10, t=80, b=10),
-        xaxis=dict(title=x_indicator),
-        yaxis=dict(title=y_indicator),
+        legend=dict(
+            orientation="h",
+            y=-0.2,
+            xanchor="center",
+            x=0.5,
+            font=dict(size=11)
+        ),
+        margin=dict(l=20, r=20, t=80, b=100),  # Increase margins
+        xaxis=dict(title=dict(text=x_indicator, font=dict(size=14))),
+        yaxis=dict(title=dict(text=y_indicator, font=dict(size=14))),
         title={
-            "font": {"size": 24},
+            "font": {"size": 22},
             "x": 0.5,
-            "xanchor": "center"
+            "xanchor": "center",
+            "y": 0.95
         }
     )
 

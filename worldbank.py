@@ -117,7 +117,7 @@ def store_clicked_country(click_data):
     return country_code
 
 
-# Layout - RESTRUCTURED as requested
+# Layout - RESTRUCTURED as requested - Map first, controls below
 app.layout = dbc.Container(
     [
         # Header section
@@ -144,7 +144,22 @@ app.layout = dbc.Container(
             className="mb-4",  # Add bottom margin to the header row
         ),
 
-        # Controls section
+        # 1. WORLD MAP SECTION (Moved to top as requested)
+        dbc.Row(
+            [
+                dbc.Col(
+                    [
+                        html.H3("Global Data Visualization",
+                                style={"textAlign": "center", "marginBottom": "15px", "marginTop": "10px"}),
+                        dcc.Graph(id="my-choropleth", figure={}, style={"height": "65vh"}),
+                    ],
+                    width=12,
+                ),
+            ],
+            className="mb-4",  # Reduced bottom margin
+        ),
+
+        # Controls section (MOVED below the map as requested)
         dbc.Card(
             dbc.CardBody([
                 dbc.Row(
@@ -243,26 +258,11 @@ app.layout = dbc.Container(
                     ],
                 ),
             ]),
-            className="mb-4",  # Add bottom margin to the card
+            className="mb-5",  # Add bottom margin to the card
             style={"boxShadow": "0 4px 6px rgba(0, 0, 0, 0.1)", "border": "none"},
         ),
 
-        # 1. WORLD MAP SECTION (Moved to top as requested)
-        dbc.Row(
-            [
-                dbc.Col(
-                    [
-                        html.H3("Global Data Visualization",
-                                style={"textAlign": "center", "marginBottom": "15px", "marginTop": "10px"}),
-                        dcc.Graph(id="my-choropleth", figure={}, style={"height": "65vh"}),
-                    ],
-                    width=12,
-                ),
-            ],
-            className="mb-5",  # Add bottom margin to this row
-        ),
-
-        # 2. COUNTRY TIME SERIES SECTION (Modified to remove bar chart)
+        # 2. COUNTRY TIME SERIES SECTION
         dbc.Row(
             [
                 dbc.Col(
@@ -280,7 +280,7 @@ app.layout = dbc.Container(
             className="mb-5",  # Add bottom margin to this row
         ),
 
-        # 3. CROSS INDICATOR SECTION (Kept as is)
+        # 3. CROSS INDICATOR SECTION
         dbc.Row(
             [
                 dbc.Col(
@@ -479,7 +479,7 @@ def update_graph(n_clicks, play_clicks, animation_year, stored_dataframe, viz_ty
     return fig
 
 
-# Callback for country time series visualization (MODIFIED to remove bar chart)
+# Callback for country time series visualization
 @app.callback(
     [Output("country-detail", "figure"),
      Output("country-detail-title", "children")],

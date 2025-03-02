@@ -262,17 +262,17 @@ app.layout = dbc.Container(
             className="mb-5",  # Add bottom margin to this row
         ),
 
-        # 2. REGIONAL STATS SECTION (Moved to middle as requested)
+        # 2. COUNTRY TIME SERIES SECTION (Modified to remove bar chart)
         dbc.Row(
             [
                 dbc.Col(
                     [
                         html.Div(id="country-detail-title", children=[
-                            html.H3("Regional Statistics", style={"textAlign": "center", "marginBottom": "15px"}),
-                            html.P("Click on a country in the map to see regional details",
+                            html.H3("Country Time Series Analysis", style={"textAlign": "center", "marginBottom": "15px"}),
+                            html.P("Click on a country in the map to see historical trends",
                                    style={"textAlign": "center", "fontStyle": "italic", "marginBottom": "20px"})
                         ]),
-                        dcc.Graph(id="country-detail", figure={}, style={"height": "65vh"}),
+                        dcc.Graph(id="country-detail", figure={}, style={"height": "55vh"}),
                     ],
                     width=12,
                 ),
@@ -280,7 +280,7 @@ app.layout = dbc.Container(
             className="mb-5",  # Add bottom margin to this row
         ),
 
-        # 3. CROSS INDICATOR SECTION (Moved to bottom as requested)
+        # 3. CROSS INDICATOR SECTION (Kept as is)
         dbc.Row(
             [
                 dbc.Col(
@@ -479,7 +479,7 @@ def update_graph(n_clicks, play_clicks, animation_year, stored_dataframe, viz_ty
     return fig
 
 
-# Callback for secondary visualization when a country is clicked
+# Callback for country time series visualization (MODIFIED to remove bar chart)
 @app.callback(
     [Output("country-detail", "figure"),
      Output("country-detail-title", "children")],
@@ -500,11 +500,11 @@ def update_country_detail(selected_country, stored_dataframe):
                 x=0.5,
                 y=0.5
             )],
-            height=700  # Increased height
+            height=550  # Adjusted height for single plot
         )
         title_component = [
-            html.H3("Regional Statistics", style={"textAlign": "center", "marginBottom": "15px"}),
-            html.P("Click on a country to see regional details",
+            html.H3("Country Time Series Analysis", style={"textAlign": "center", "marginBottom": "15px"}),
+            html.P("Click on a country to see historical trends",
                    style={"textAlign": "center", "fontStyle": "italic", "marginBottom": "20px"})
         ]
         return fig, title_component
@@ -516,16 +516,10 @@ def update_country_detail(selected_country, stored_dataframe):
     country_data = dff[dff["iso3c"] == selected_country]
     country_name = country_data["country"].iloc[0] if not country_data.empty else "Unknown Country"
 
-    # Create a subplot with 2 rows and 1 column
-    fig = make_subplots(
-        rows=2,
-        cols=1,
-        subplot_titles=("Time Series Analysis", "Indicator Comparison"),
-        vertical_spacing=0.28,  # Increased vertical spacing between subplots
-        row_heights=[0.100, 0.100]  # Adjust row heights for better balance
-    )
+    # Create a figure for time series analysis only
+    fig = go.Figure()
 
-    # 1. Time series for selected indicators
+    # Time series for selected indicators
     for indicator in indicators.values():
         fig.add_trace(
             go.Scatter(
@@ -533,95 +527,43 @@ def update_country_detail(selected_country, stored_dataframe):
                 y=country_data[indicator],
                 mode="lines+markers",
                 name=indicator,
-                hovertemplate="%{y:.2f}"
-            ),
-            row=1, col=1
+                hovertemplate="Year: %{x}<br>Value: %{y:.2f}"
+            )
         )
 
-    # 2. Bar chart comparing the latest values of each indicator
-    latest_year = country_data["year"].max()
-    latest_data = country_data[country_data["year"] == latest_year]
-
-    if not latest_data.empty:
-        indicator_values = []
-        indicator_names = []
-
-        for indicator in indicators.values():
-            if pd.notnull(latest_data[indicator].iloc[0]):
-                indicator_values.append(latest_data[indicator].iloc[0])
-                indicator_names.append(indicator)
-
-        fig.add_trace(
-            go.Bar(
-                x=indicator_names,
-                y=indicator_values,
-                text=[f"{val:.2f}" for val in indicator_values],  # Format text values
-                textposition="auto",
-                hovertemplate="%{y:.2f}"
-            ),
-            row=2, col=1
-        )
-
-    # Update layout
+    # Update layout with better styling
     fig.update_layout(
-        height=750,  # Increased overall height
+        height=550,  # Adjusted height for single plot
         legend=dict(
             orientation="h",
-            y=-0.15,  # Lowered legend position to accommodate larger figure
+            y=-0.15,
             xanchor="center",
-            x=0.5,
-            font=dict(size=11)
+            x=0.5
         ),
-        margin=dict(l=40, r=40, t=100, b=120),  # Increased margins all around
-        hovermode="closest"
-    )
-
-    # Update axes with improved padding and text wrapping
-    fig.update_xaxes(
-        title_text="Year",
-        row=1,
-        col=1,
-        title_standoff=15  # More space between axis and title
-    )
-
-    # Add more padding to x-axis in second plot and enable text wrapping
-    fig.update_xaxes(
-        tickangle=45,  # Angle for better readability
-        row=2,
-        col=1,
-        tickfont=dict(size=10),  # Smaller font to fit text
-        title_standoff=20  # More space between axis and title
-    )
-
-    # Limit the number of ticks to avoid crowding
-    fig.update_xaxes(nticks=10, row=1, col=1)
-
-    # Add extra padding for y-axes
-    fig.update_yaxes(
-        title_standoff=15,  # More space for y-axis title
-        row=1,
-        col=1
-    )
-    fig.update_yaxes(
-        title_standoff=15,  # More space for y-axis title
-        row=2,
-        col=1
-    )
-
-    # Update subplot titles with increased padding and better positioning
-    fig.update_annotations(font_size=16)
-
-    # Enable text wrapping for the bar chart by constraining width
-    fig.update_layout(
-        xaxis2=dict(
-            constrain='domain',  # Constrains bars to stay within the plot area
-            automargin=True,  # Automatically adjust margins for labels
-        )
+        margin=dict(l=40, r=40, t=40, b=100),
+        hovermode="closest",
+        xaxis=dict(
+            title="Year",
+            tickfont=dict(size=12),
+            gridcolor='rgba(230, 230, 230, 0.8)'
+        ),
+        yaxis=dict(
+            tickfont=dict(size=12),
+            gridcolor='rgba(230, 230, 230, 0.8)'
+        ),
+        plot_bgcolor='rgba(250, 250, 250, 0.8)',
+        title={
+            "text": f"Time Series Analysis for {country_name}",
+            "font": {"size": 18},
+            "x": 0.5,
+            "xanchor": "center",
+            "y": 0.95
+        }
     )
 
     # Create title component
     title_component = [
-        html.H3(f"{country_name} Regional Statistics", style={"textAlign": "center", "marginBottom": "15px"}),
+        html.H3(f"{country_name} Time Series Analysis", style={"textAlign": "center", "marginBottom": "15px"}),
         html.P(f"Region: {country_data['region'].iloc[0] if not country_data.empty else 'Unknown'}",
                style={"textAlign": "center", "marginBottom": "15px"})
     ]

@@ -272,7 +272,7 @@ app.layout = dbc.Container(
                             html.P("Click on a country in the map to see regional details",
                                    style={"textAlign": "center", "fontStyle": "italic", "marginBottom": "20px"})
                         ]),
-                        dcc.Graph(id="country-detail", figure={}, style={"height": "60vh"}),
+                        dcc.Graph(id="country-detail", figure={}, style={"height": "65vh"}),
                     ],
                     width=12,
                 ),
@@ -500,7 +500,7 @@ def update_country_detail(selected_country, stored_dataframe):
                 x=0.5,
                 y=0.5
             )],
-            height=600  # Set consistent height
+            height=700  # Increased height
         )
         title_component = [
             html.H3("Regional Statistics", style={"textAlign": "center", "marginBottom": "15px"}),
@@ -521,7 +521,8 @@ def update_country_detail(selected_country, stored_dataframe):
         rows=2,
         cols=1,
         subplot_titles=("Time Series Analysis", "Indicator Comparison"),
-        vertical_spacing=0.22  # Increase vertical spacing between subplots
+        vertical_spacing=0.28,  # Increased vertical spacing between subplots
+        row_heights=[0.55, 0.45]  # Adjust row heights for better balance
     )
 
     # 1. Time series for selected indicators
@@ -554,7 +555,7 @@ def update_country_detail(selected_country, stored_dataframe):
             go.Bar(
                 x=indicator_names,
                 y=indicator_values,
-                text=indicator_values,
+                text=[f"{val:.2f}" for val in indicator_values],  # Format text values
                 textposition="auto",
                 hovertemplate="%{y:.2f}"
             ),
@@ -563,23 +564,60 @@ def update_country_detail(selected_country, stored_dataframe):
 
     # Update layout
     fig.update_layout(
-        height=600,
+        height=750,  # Increased overall height
         legend=dict(
             orientation="h",
-            y=-0.2,
+            y=-0.15,  # Lowered legend position to accommodate larger figure
             xanchor="center",
             x=0.5,
-            font=dict(size=10)  # Smaller font for legend
+            font=dict(size=11)
         ),
-        margin=dict(l=20, r=20, t=80, b=80),  # Increase margins
+        margin=dict(l=40, r=40, t=100, b=120),  # Increased margins all around
         hovermode="closest"
     )
 
-    # Update axes
-    fig.update_xaxes(title_text="Year", row=1, col=1)
-    fig.update_xaxes(tickangle=45, row=2, col=1)
+    # Update axes with improved padding and text wrapping
+    fig.update_xaxes(
+        title_text="Year",
+        row=1,
+        col=1,
+        title_standoff=15  # More space between axis and title
+    )
+
+    # Add more padding to x-axis in second plot and enable text wrapping
+    fig.update_xaxes(
+        tickangle=45,  # Angle for better readability
+        row=2,
+        col=1,
+        tickfont=dict(size=10),  # Smaller font to fit text
+        title_standoff=20  # More space between axis and title
+    )
+
     # Limit the number of ticks to avoid crowding
     fig.update_xaxes(nticks=10, row=1, col=1)
+
+    # Add extra padding for y-axes
+    fig.update_yaxes(
+        title_standoff=15,  # More space for y-axis title
+        row=1,
+        col=1
+    )
+    fig.update_yaxes(
+        title_standoff=15,  # More space for y-axis title
+        row=2,
+        col=1
+    )
+
+    # Update subplot titles with increased padding and better positioning
+    fig.update_annotations(font_size=16)
+
+    # Enable text wrapping for the bar chart by constraining width
+    fig.update_layout(
+        xaxis2=dict(
+            constrain='domain',  # Constrains bars to stay within the plot area
+            automargin=True,  # Automatically adjust margins for labels
+        )
+    )
 
     # Create title component
     title_component = [

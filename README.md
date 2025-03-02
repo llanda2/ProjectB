@@ -1,6 +1,6 @@
 # README for Project B Visualizing Socioeconomic Development and Environmental Impact
 
-## Your Name and Course Information
+## Name and Course Information
 - **Name**: Lauren Landa
 - **Course**: CS-150
 - **Instructor**: Mike Ryu

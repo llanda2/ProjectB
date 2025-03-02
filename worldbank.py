@@ -522,7 +522,7 @@ def update_country_detail(selected_country, stored_dataframe):
         cols=1,
         subplot_titles=("Time Series Analysis", "Indicator Comparison"),
         vertical_spacing=0.28,  # Increased vertical spacing between subplots
-        row_heights=[0.55, 0.45]  # Adjust row heights for better balance
+        row_heights=[0.100, 0.100]  # Adjust row heights for better balance
     )
 
     # 1. Time series for selected indicators

@@ -1,4 +1,4 @@
-# README for [Your Project Title]
+# README for Project B Visualizing Socioeconomic Development and Environmental Impact
 
 ## Your Name and Course Information
 - **Name**: Lauren Landa
